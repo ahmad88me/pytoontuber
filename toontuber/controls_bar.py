@@ -11,33 +11,25 @@ import util
 
 
 
+class ControlsBar():
 
-# def upload_vid(idx):
-#     filename = filedialog.askopenfilename()
-#     print(f"Filename {filename} for idx: {idx}")
-
-
-
-class AnimationBar():
-
-    def __init__(self, thickness=200, num_buttons=10, vertical=True):
+    def __init__(self, frame_height=200, num_buttons=10):
         self.num_buttons = num_buttons
         self.buttons = []
-        self.thickness = thickness
+        self.frame_height = frame_height
         self.upload_img = Image.open('upload.png')
         self.button_height = None
         self.vids = [None for i in range(self.num_buttons)]
-        self.vertical = vertical
 
     def get_vid(self, vid_id):
         return self.vids[vid_id]
 
-    def draw_animation_grid(self, root,  bar_length=400, grid_row=0, grid_col=0):
+    def draw_animation_grid(self, root,  w_width=400):
         # b=Button(root, text="Hello")
         # b.pack()
         upload_img = self.upload_img
-        thickness = self.thickness
-        img_height = min(thickness, int(bar_length/self.num_buttons))
+        frame_height = self.frame_height
+        img_height = min(frame_height, int(w_width/self.num_buttons))
         self.button_height = img_height
         # img_height = frame_height
         print(f"Image button height: {img_height}")
@@ -47,11 +39,9 @@ class AnimationBar():
         upload_img_file = ImageTk.PhotoImage(upload_img2)
 
         # upload_img_file = PhotoImage(file='y.png')
-        if self.vertical:
-            anim_grid_frame = Frame(root, width=self.thickness, height=bar_length)
-        else:
-            anim_grid_frame = Frame(root, height=self.thickness, width=bar_length)
-        anim_grid_frame.grid(row=grid_row,column=grid_col)
+
+        anim_grid_frame = Frame(root, height=self.frame_height, width=w_width)
+        anim_grid_frame.grid(row=0,column=0)
         # anim_grid_frame.pack(side=TOP)
         window = anim_grid_frame
         for i in range(self.num_buttons):
@@ -61,10 +51,7 @@ class AnimationBar():
                 relief=RAISED,
                 borderwidth=1
             )
-            if self.vertical:
-                frame.grid(row=i, column=j)
-            else:
-                frame.grid(row=j, column=i)
+            frame.grid(row=j, column=i)
 
             upload_vid_partial = partial(self.upload_vid, i)
 

@@ -99,14 +99,14 @@ canvas = Canvas(root, width=toon_view_width, height=toon_view_height)
 #
 # upload_img = PhotoImage(file='upload.png')
 # draw_animation_grid()
-canvas.grid(row=1, column=0, sticky="news")
-root.grid_rowconfigure(1, weight=1)
-root.grid_columnconfigure(0, weight=1)
+canvas.grid(row=0, column=1, sticky="news")
+root.grid_rowconfigure(0, weight=1)
+root.grid_columnconfigure(1, weight=1)
 # canvas.pack(fill="both", expand=True)
 #canvas.pack()
 # draw_animation_grid()
 anim_bar = AnimationBar()
-anim_bar.draw_animation_grid(root)
+anim_bar.draw_animation_grid(root, grid_col=2, grid_row=0)
 
 
 def key_press(event):
@@ -130,7 +130,10 @@ def take_action(action_name):
             print(f"Change active video to {vpath}")
             loop_video()
 
+
 root.bind('<Key>', key_press)
+
+
 
 update()
 root.mainloop()
