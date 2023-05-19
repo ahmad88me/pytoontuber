@@ -138,6 +138,10 @@ def key_press(event):
     action_name = keybind.get_action(key)
     if action_name:
         take_action(action_name)
+    if key=='u':
+        cont_bar.input_dev_battery.change_level(cont_bar.input_dev_battery.level + 0.1)
+    elif key=='l':
+        cont_bar.input_dev_battery.change_level(cont_bar.input_dev_battery.level - 0.1)
 
 def take_action(action_name):
     global active_video_path

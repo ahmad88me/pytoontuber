@@ -44,8 +44,8 @@ def main():
 
     win = Tk()
     win.geometry("700x350")  # Create a Label to capture the Video frames
-    label = Label(win)
-    label.grid(row=0, column=0)
+    # label = Label(win)
+    # label.grid(row=0, column=0)
     # cap= cv2.VideoCapture(0)
 
     # create display window
