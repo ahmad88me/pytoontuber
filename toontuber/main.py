@@ -163,6 +163,15 @@ root.bind('<Key>', key_press)
 
 
 
+
+
+
+
+
+
+
+
+
 update()
 root.mainloop()
 cap.release()
