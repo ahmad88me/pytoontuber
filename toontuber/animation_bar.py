@@ -1,6 +1,6 @@
 
 from PIL import Image,ImageTk
-from tkinter import NW, N, CENTER, RAISED, TOP
+from tkinter import NW, N, CENTER, RAISED, TOP, W, E
 from tkinter import  Label, Button, Frame
 from tkinter import filedialog
 from tkinter import Tk, Canvas, PhotoImage
@@ -28,16 +28,25 @@ class AnimationBar():
         self.button_height = None
         self.vids = [None for i in range(self.num_buttons)]
         self.vertical = vertical
+        self.frame = None
 
     def get_vid(self, vid_id):
         return self.vids[vid_id]
+
+    def resize_buttons(self, bar_length):
+        # img_height = min(self.thickness, int(bar_length/self.num_buttons))
+        img_height = min(self.thickness, int(bar_length/(self.num_buttons+1)))
+
+        print(f"img height: {img_height} thickness: {self.thickness} bar_length: {bar_length}")
+        for b in self.buttons:
+            b.config(height=img_height, width=img_height)
 
     def draw_animation_grid(self, root,  bar_length=400, grid_row=0, grid_col=0):
         # b=Button(root, text="Hello")
         # b.pack()
         upload_img = self.upload_img
         thickness = self.thickness
-        img_height = min(thickness, int(bar_length/self.num_buttons))
+        img_height = min(thickness, int(bar_length/(self.num_buttons+1)))
         self.button_height = img_height
         # img_height = frame_height
         print(f"Image button height: {img_height}")
@@ -50,8 +59,9 @@ class AnimationBar():
         if self.vertical:
             anim_grid_frame = Frame(root, width=self.thickness, height=bar_length)
         else:
-            anim_grid_frame = Frame(root, height=self.thickness, width=bar_length)
+            anim_grid_frame = Frame(root, height=self.thickness, width=bar_length )
         anim_grid_frame.grid(row=grid_row,column=grid_col)
+        self.frame = anim_grid_frame
         # anim_grid_frame.pack(side=TOP)
         window = anim_grid_frame
         for i in range(self.num_buttons):
@@ -70,12 +80,20 @@ class AnimationBar():
 
             b = Button(master=frame, image=upload_img_file, height=img_height, width=img_height, command=upload_vid_partial)
             b.image = upload_img_file
-            b.pack()
+            if self.vertical:
+                b.grid(row=0, column=1)
+            else:
+                b.grid(row=0, column=0)
+            # b.pack()
             # l = Label(master=b, text=str(i))
             # l.pack()
             self.buttons.append(b)
-            l = Label(master=frame, text=str(i))
-            l.pack()
+            l = Label(master=frame, text=str(i), anchor=E)
+            if self.vertical:
+                l.grid(row=0, column=0)
+            else:
+                l.grid(row=1, column=0)
+            # l.pack(side="left")
             # l.grid(row=j+1, column=i)
 
     def upload_vid(self, idx):

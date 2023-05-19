@@ -1,9 +1,10 @@
 from PIL import Image,ImageTk
-from tkinter import NW, N, CENTER, RAISED, TOP
+from tkinter import NW, N, CENTER, RAISED, TOP, E
 from tkinter import  Label, Button, Frame
 from tkinter import filedialog
 from tkinter import Tk, Canvas, PhotoImage
 from animation_bar import AnimationBar
+from controls_bar import ControlsBar
 import keybind
 
 from functools import partial
@@ -24,10 +25,25 @@ w_width = 400
 w_height = w_width
 
 upload_img = None  # PhotoImage(file='upload.png')
-
+window_resize_active=False
 active_video_path = "/Users/aalobaid/Downloads/Tuber/Tuber/idlenormal.mp4"
 
+# def on_window_resize(event):
+# #    print("widget", event.widget)
+#     print("height", event.height, "width", event.width)
+#
+#     # w_height = event.height
+#     # w_width = root.winfo_width()
+#     # w_height = root.winfo_height()
+#     print(f"Window Height: {event.height}")
+#     anim_bar.resize_buttons(event.height)
 
+    # if True:
+    # #if window_resize_active:
+    #     print("widget", event.widget)
+    #     print("height", event.height, "width", event.width)
+    # else:
+    #     print("resize is inactive")
 
 def loop_video():
     global cap, active_video_path
@@ -53,21 +69,24 @@ def update():
 
     if ret:
         # image resize
-        w_width = root.winfo_width()
-        w_height = root.winfo_height()
+        # w_width = root.winfo_width()
+        # w_height = root.winfo_height()
+        w_width = canvas.winfo_width()
+        w_height = canvas.winfo_height()
         toon_view_width = min(w_width, w_height)
         toon_view_height = toon_view_width
         img = cv2.resize(img, (toon_view_width, toon_view_height))
 
         photo = photo_image(img)
         # canvas.create_image(0, 0, image=photo, anchor=NW)
-        canvas.create_image(w_width/2 - toon_view_width/2, w_height/2 - toon_view_height/2, image=photo, anchor=NW)
-
+        #canvas.create_image(w_width/2 - toon_view_width/2, w_height/2 - toon_view_height/2, image=photo, anchor=NW)
+        canvas.create_image(0, 0, image=photo,
+                            anchor=NW)
         canvas.image = photo
     else:
         loop_video()
+        # anim_bar.resize_buttons(400)
 
-    # draw_animation_grid()
 
     root.after(15, update)
 
@@ -108,6 +127,10 @@ root.grid_columnconfigure(1, weight=1)
 anim_bar = AnimationBar()
 anim_bar.draw_animation_grid(root, grid_col=2, grid_row=0)
 
+cont_bar = ControlsBar()
+cont_bar.read_input_devices()
+cont_bar.draw_input_controls(root, grid_col=0, grid_row=0)
+
 
 def key_press(event):
     key = event.char
@@ -132,6 +155,7 @@ def take_action(action_name):
 
 
 root.bind('<Key>', key_press)
+# root.bind("<Configure>", on_window_resize)
 
 
 
