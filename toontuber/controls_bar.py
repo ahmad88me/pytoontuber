@@ -2,7 +2,7 @@ import numpy as np
 from PIL import Image,ImageTk
 from tkinter import NW, N, W, CENTER, RAISED, TOP, LEFT
 from tkinter import StringVar
-from tkinter import  Label, Button, Frame
+from tkinter import  Label, Button, Frame, Scale
 # from tkinter import ttk
 from tkinter.ttk import Combobox
 
@@ -36,11 +36,19 @@ class ControlsBar():
         self.input_dev_amp_scale = 10
         self.hide_button = None
         self.other_frames = other_frames
-
-
+        self.amp_scale = None
 
     def append_frame(self, frame):
         self.other_frames.append(frame)
+
+    def _amp_scale_callback(self, event):
+        print(f" new amp scale value: {self.amp_scale.get()}")
+        self.input_dev_amp_scale = self.amp_scale.get()
+
+    def _draw_amp_scale(self):
+        scale = Scale(self.frame, label="Sensitivity", from_=1, to=30, command=self._amp_scale_callback)
+        self.amp_scale = scale
+        scale.grid(row=4, column=0)
 
     def _draw_hide_button(self):
         self.hide_button = Button(self.frame, text="Hide", command=self.hide_frame)
@@ -96,6 +104,7 @@ class ControlsBar():
         self._draw_input_devs(self.frame)
         self._draw_input_battery(width=self.thickness)
         self._draw_hide_button()
+        self._draw_amp_scale()
 
     def _input_dev_combo_callback(self, event):
         print(f"Event: {event}")
@@ -143,4 +152,17 @@ class ControlsBar():
         min_num = np.min(indata)
         amp = max(max_num, -min_num)
         self.input_dev_battery.change_level(amp * self.input_dev_amp_scale)
+        self.post_audio_callback(amp)
+
+    def post_audio_callback(self, amp):
+        amp = amp * self.input_dev_amp_scale
+        print(f"amp {amp}")
+        # if amp < 0.1:
+        #     print("idle")
+        # elif amp < 0.3:
+        #     print("talk")
+        # elif amp < 0.6:
+        #     print("peak")
+        # else:
+        #     print(f"scream {amp}")
 

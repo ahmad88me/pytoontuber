@@ -9,19 +9,14 @@ from controls_bar import ControlsBar
 import datetime
 import keybind
 
-
 from functools import partial
 import cv2
-
-# toon_view_width = 1200
-# toon_view_height = 700
 
 toon_view_width = 400
 toon_view_height = 400
 
 anim_grid_height = 200
 
-# anim_vids = [None for _ in range(10)]
 
 
 w_width = 400
@@ -32,20 +27,14 @@ MIN_TIME_DELTA_MSECS = 500
 
 last_resize = datetime.datetime.now()
 
-upload_img = None  # PhotoImage(file='upload.png')
+upload_img = None
 window_resize_active=False
 active_video_path = "/Users/aalobaid/Downloads/Tuber/Tuber/idlenormal.mp4"
-active_video_fps = None
+active_video_fps = 1000
 
 def on_window_resize(event):
     global last_resize, w_height, w_width, anim_bar
-#    print("widget", event.widget)
-#     print("height", event.height, "width", event.width)
 
-    # w_height = event.height
-    # w_width = root.winfo_width()
-    # w_height = root.winfo_height()
-    # print(f"Window Height: {event.height}")
     time_diff = datetime.datetime.now() - last_resize
     if abs(w_height - event.height) > MIN_WIN_DELTA and time_diff.microseconds > MIN_TIME_DELTA_MSECS:
         w_height = root.winfo_height()
@@ -53,25 +42,13 @@ def on_window_resize(event):
         print(f"Resize event height: {event.height} height: {w_height} width: {w_width}")
         anim_bar.resize_buttons(w_height)
         last_resize = datetime.datetime.now()
-    # else:
-    #     print(f"Skip")
-    # if True:
-    # #if window_resize_active:
-    #     print("widget", event.widget)
-    #     print("height", event.height, "width", event.width)
-    # else:
-    #     print("resize is inactive")
 
 def loop_video():
     global cap, active_video_path, active_video_fps
-    # vpath = "/Users/aalobaid/Downloads/Tuber/Tuber/idlenormal.mp4"
-    # vpath = "/Users/aalobaid/Downloads/Tuber/Tuber/talknormal.mp4"
     vpath = active_video_path
     cap = cv2.VideoCapture(vpath)
     active_video_fps = cap.get(cv2.CAP_PROP_FPS)
-#cv2.GetCaptureProperty(cap, CV_CAP_PROP_FPS)
     print(f"FPS: {active_video_fps}")
-# filename = filedialog.askopenfilename
 
 
 
@@ -88,9 +65,6 @@ def update():
     ret, img = cap.read()
 
     if ret:
-        # image resize
-        # w_width = root.winfo_width()
-        # w_height = root.winfo_height()
         w_width = canvas.winfo_width()
         w_height = canvas.winfo_height()
         toon_view_width = min(w_width, w_height)
@@ -98,31 +72,16 @@ def update():
         img = cv2.resize(img, (toon_view_width, toon_view_height))
 
         photo = photo_image(img)
-        # canvas.create_image(0, 0, image=photo, anchor=NW)
         canvas.create_image(w_width/2 - toon_view_width/2, w_height/2 - toon_view_height/2, image=photo, anchor=NW)
-        # canvas.create_image(0, 0, image=photo, anchor=NW)
         canvas.image = photo
     else:
         loop_video()
-        # anim_bar.resize_buttons(400)
     wait_time = int(1000/active_video_fps)
     root.after(wait_time, update)
 
-    # root.after(15, update)
-
-
-
-
-
-
-
-# vpath = "/Users/aalobaid/Downloads/Tuber/Tuber/idlenormal.mp4"
-# vpath = "/Users/aalobaid/Downloads/Tuber/Tuber/talknormal.mp4"
 
 root = Tk()
 root.title("Video")
-
-# cap = cv2.VideoCapture(vpath)
 loop_video()
 
 
@@ -130,20 +89,11 @@ canvas = Canvas(root, width=toon_view_width, height=toon_view_height)
 
 
 
-# upload_img = Image.open('y.png')
-# upload_img = Image.open('upload.png')
-
-# image2 = deathwing.resize((100, 50), Image.ANTIALIAS)
-# Deathwing2 = ImageTk.PhotoImage(image2)
-#
-# upload_img = PhotoImage(file='upload.png')
-# draw_animation_grid()
 canvas.grid(row=0, column=1, sticky="news")
 root.grid_rowconfigure(0, weight=1)
 root.grid_columnconfigure(1, weight=1)
-# canvas.pack(fill="both", expand=True)
-#canvas.pack()
-# draw_animation_grid()
+
+
 anim_bar = AnimationBar()
 anim_bar.draw_animation_grid(root, grid_col=2, grid_row=0)
 
@@ -181,8 +131,6 @@ def take_action(action_name):
 
 root.bind('<Key>', key_press)
 root.bind("<Configure>", on_window_resize)
-
-
 
 
 update()

@@ -63,6 +63,9 @@ class BatteryWidget():
             self.level = level
             # print(f"active bins: {self.active_bins}")
             self.draw_battery()
-
+        elif level > 1:
+            self.active_bins = self.bins
+            self.level = 1
+            self.draw_battery()
 
 
