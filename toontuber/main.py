@@ -6,9 +6,11 @@ from tkinter import Tk, Canvas, PhotoImage
 import math
 from animation_bar import AnimationBar
 from controls_bar import ControlsBar
+from animan import AnimationManager
 import datetime
 import keybind
-
+import argparse
+import queue
 from functools import partial
 import cv2
 
@@ -32,6 +34,11 @@ window_resize_active=False
 active_video_path = "/Users/aalobaid/Downloads/Tuber/Tuber/idlenormal.mp4"
 active_video_fps = 1000
 
+#anime_q = queue.Queue()
+anime_q = []
+curr_action = "idle"
+anime_manager = AnimationManager()
+
 def on_window_resize(event):
     global last_resize, w_height, w_width, anim_bar
 
@@ -43,9 +50,12 @@ def on_window_resize(event):
         anim_bar.resize_buttons(w_height)
         last_resize = datetime.datetime.now()
 
-def loop_video():
+def loop_video(vpath=None):
     global cap, active_video_path, active_video_fps
-    vpath = active_video_path
+    if vpath is None:
+        vpath = active_video_path
+    else:
+        active_video_path = vpath
     cap = cv2.VideoCapture(vpath)
     active_video_fps = cap.get(cv2.CAP_PROP_FPS)
     print(f"FPS: {active_video_fps}")
@@ -75,7 +85,15 @@ def update():
         canvas.create_image(w_width/2 - toon_view_width/2, w_height/2 - toon_view_height/2, image=photo, anchor=NW)
         canvas.image = photo
     else:
-        loop_video()
+        # if anime_q.empty():
+        if not anime_q:
+            print(f"queue is empty")
+            loop_video()
+        else:
+            # vpath = anime_q.get(block=True)
+            vpath = anime_q.pop(0)
+            print(f"getting a new vpath: {vpath}")
+            loop_video(vpath)
     wait_time = int(1000/active_video_fps)
     root.after(wait_time, update)
 
@@ -100,7 +118,6 @@ anim_bar.draw_animation_grid(root, grid_col=2, grid_row=0)
 cont_bar = ControlsBar(other_frames=[anim_bar.frame])
 cont_bar.read_input_devices()
 cont_bar.draw_input_controls(root, grid_col=0, grid_row=0)
-
 
 def key_press(event):
     key = event.char
@@ -128,11 +145,61 @@ def take_action(action_name):
             print(f"Change active video to {vpath}")
             loop_video()
 
+def audio_to_action(amp):
+    global anime_manager, anime_q, curr_action
 
-root.bind('<Key>', key_press)
-root.bind("<Configure>", on_window_resize)
+    if amp < 0.05:
+        action = "idle"
+    # else:
+    #     action = "talk"
+    elif amp < 0.7:
+        action = "talk"
+    else:
+        action = "peak"
+
+    print(f"audio to action: {action}")
+    print(f"curr action{curr_action} and new action {action}")
+    if anime_q and curr_action not in ["idle"]:
+    # if not anime_q.empty() and curr_action not in ["idle", "set"]:
+        print(f"queue is not empty {anime_q} and curr_action {curr_action}")
+        return
+
+    if curr_action == action:
+        return
+    # if curr_action == "idle" and action != "idle"
+
+    # set_vpath = anime_manager.get_action_vid("set")
+    # loop_video(vpath)
+    # anime_q.queue.clear()
+    anime_q = []
+    vpath = anime_manager.get_action_vid(action)
+    loop_video(vpath)
+    # anime_q = [set_vpath, vpath]
+    # anime_q = [vpath]
+
+    curr_action = action
+    # anime_q.put(set_vpath, block=True)
+    # anime_q.put(vpath, block=True)
 
 
-update()
-root.mainloop()
-cap.release()
+def parse():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('-v', '--videos', nargs='+', help='the list of videos to be utilised')
+    args = parser.parse_args()
+    return args.videos
+
+def main():
+    global root, cap, anime_manager
+    videos = parse()
+    anime_manager.organise(videos)
+    cont_bar.amp_ext_callback = audio_to_action
+    root.bind('<Key>', key_press)
+    root.bind("<Configure>", on_window_resize)
+    update()
+    root.mainloop()
+    cap.release()
+
+if __name__ == "__main__":
+    main()
+
+

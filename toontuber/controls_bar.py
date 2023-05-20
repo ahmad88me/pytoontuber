@@ -37,6 +37,7 @@ class ControlsBar():
         self.hide_button = None
         self.other_frames = other_frames
         self.amp_scale = None
+        self.amp_ext_callback = None
 
     def append_frame(self, frame):
         self.other_frames.append(frame)
@@ -156,7 +157,9 @@ class ControlsBar():
 
     def post_audio_callback(self, amp):
         amp = amp * self.input_dev_amp_scale
-        print(f"amp {amp}")
+        # print(f"amp {amp}")
+        if self.amp_ext_callback:
+            self.amp_ext_callback(amp)
         # if amp < 0.1:
         #     print("idle")
         # elif amp < 0.3:
