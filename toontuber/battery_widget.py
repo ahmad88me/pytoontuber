@@ -36,8 +36,8 @@ class BatteryWidget():
         w = self.width/2
         h = int(self.width/(self.bins+1))
 
-        print(f"The master width is: {self.width}")
-        print(f"The x position: {self.width/2 - w/2} with canvas width {self.width} and bin width {w}")
+        # print(f"The master width is: {self.width}")
+        # print(f"The x position: {self.width/2 - w/2} with canvas width {self.width} and bin width {w}")
         for bi in range(self.bins):
             x0 = self.width/2 - w/2
             x1 = x0 + w
@@ -61,12 +61,8 @@ class BatteryWidget():
         if 0 <= level <= 1:
             self.active_bins = round(self.bins * level)
             self.level = level
-            print(f"active bins: {self.active_bins}")
+            # print(f"active bins: {self.active_bins}")
             self.draw_battery()
-            # for idx, rec in enumerate(self.recs):
-            #     if idx < self.active_bins:
-            #         rec.configure(fill=self.active_color)
-            #     else:
-            #         rec.configure(fill=self.inactive_color)
+
 
 

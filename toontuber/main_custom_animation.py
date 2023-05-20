@@ -1,3 +1,8 @@
+"""
+This interface supports custom animations. The second iteration will support the
+change of animation based on the volumn and will have more improvements.
+"""
+
 from PIL import Image,ImageTk
 from tkinter import NW, N, CENTER, RAISED, TOP, E
 from tkinter import  Label, Button, Frame

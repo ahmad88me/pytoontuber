@@ -21,7 +21,7 @@ from battery_widget import BatteryWidget
 
 class ControlsBar():
 
-    def __init__(self, thickness=100, bar_length=400, num_buttons=10):
+    def __init__(self, thickness=100, bar_length=400, num_buttons=10, other_frames=[]):
         self.num_buttons = num_buttons
         self.buttons = []
         self.thickness = thickness
@@ -34,12 +34,27 @@ class ControlsBar():
         self.input_dev_battery = None
         self.input_dev_thread = None
         self.input_dev_amp_scale = 10
+        self.hide_button = None
+        self.other_frames = other_frames
 
-    # def get_active_input_dev(self):
-    #     return self.input_devices[self.active_input_dev]
+
+
+    def append_frame(self, frame):
+        self.other_frames.append(frame)
+
+    def _draw_hide_button(self):
+        self.hide_button = Button(self.frame, text="Hide", command=self.hide_frame)
+        self.hide_button.grid(row=2, column=0)
+
+    def hide_frame(self):
+        self.frame.grid_forget()
+        for f in self.other_frames:
+            f.grid_forget()
 
     def read_input_devices(self):
-
+        """
+        Fetch input mics and store them locally
+        """
         devs = sd.query_devices(device=None)
         input_devs = [d for d in devs if d['max_input_channels'] > 0]
         print(f"found input devices: {input_devs}")
@@ -50,31 +65,37 @@ class ControlsBar():
         self.input_devices = d
         print(f"input devices dict: {self.input_devices}")
 
-    def draw_input_devs(self, frame):
+    def _draw_input_devs(self, frame):
+        """
+        To draw the Combobox that lists the available mics
+        """
         names = list(self.input_devices.keys())
         combo = Combobox(frame, values=names, state='readonly', width=9)
-        # combo['state'] = 'readonly'
-
         combo.set("Pick a mic")
         combo.bind('<<ComboboxSelected>>', self._input_dev_combo_callback)
-        #combo.grid(column=grid_col, row=grid_row)
-        #combo.pack()
         combo.grid(row=0, column=0, sticky=NW)
         self.input_dev_combo = combo
 
-    def draw_input_battery(self, width):
+    def _draw_input_battery(self, width):
+        """
+        Draw the Battery Widget for the mic monitor
+        """
         b = BatteryWidget(self.frame, width=width, grid_row=1, grid_column=0)
         b.draw_battery(width)
         self.input_dev_battery = b
 
     def draw_input_controls(self, root, grid_col, grid_row):
+        """
+        To draw all controll
+        """
         self.frame = Frame(root, height=self.bar_length, width=self.thickness,
                            #bg="white",
                            highlightbackground="blue",
                            highlightthickness=4)
         self.frame.grid(column=grid_col, row=grid_row)
-        self.draw_input_devs(self.frame)
-        self.draw_input_battery(width=self.thickness)
+        self._draw_input_devs(self.frame)
+        self._draw_input_battery(width=self.thickness)
+        self._draw_hide_button()
 
     def _input_dev_combo_callback(self, event):
         print(f"Event: {event}")
@@ -86,40 +107,29 @@ class ControlsBar():
     def set_input_device(self, dev_name):
         self.active_input_dev = dev_name
 
-    def audio_callback(self, indata, outdata, frames, time, status):
-        print(f"num of frames {frames}")
-        # callback(indata: buffer, outdata: buffer, frames: int, time: CData, status: CallbackFlags)
-
     def capture_audio(self):
+        """
+        Create a thread to listen and monitor mic data
+        """
         print(f"Capture Audio {self.active_input_dev}")
         dev = self.input_devices[self.active_input_dev]
         print(f"Active device: {dev}")
-        # t = Thread(target=sound_thread, args=(dev,))
-        t = Thread(target=self.sound_thread, args=(dev,))
+        t = Thread(target=self._sound_thread, args=(dev,))
 
         t.run()
         if self.input_dev_thread:
             self.input_dev_thread.kill()
         self.input_dev_thread = t
-        # stream = sd.RawInputStream(device=dev['name'],
-        #                         channels=dev['max_input_channels'],
-        #                         samplerate=dev['default_samplerate'], callback=audio_callback)
-        # stream = sd.InputStream(device=dev['id'],
-        #                         # channels=dev['max_input_channels']-1,
-        #                         channels=1,
-        #                         samplerate=dev['default_samplerate'], callback=audio_callback2)
-        # stream = sd.InputStream(device=3,
-        #                         # channels=dev['max_input_channels']-1,
-        #                         channels=1,
-        #                         samplerate=44100.0,
-        #                         callback=audio_callback2)
 
-    def sound_thread(self, dev):
+    def _sound_thread(self, dev):
+        """
+        Sound monitoring thread
+        """
         with sd.InputStream(device=dev['index'],
                             samplerate=dev['default_samplerate'],
                             channels=dev['max_input_channels'], callback=self.audio_callback):
             print('#' * 80)
-            print('press Return to quit')
+            print('press Return to quit mic monitor')
             print('#' * 80)
             input()
 
@@ -128,36 +138,9 @@ class ControlsBar():
         downsample = 10
         if status:
             print(status, file=sys.stderr)
-        # # Fancy indexing with mapping creates a (necessary!) copy:
-        # q.put(indata[::args.downsample, mapping])
 
-        # print(f"out num of frames {frames}")
         max_num = np.max(indata)
         min_num = np.min(indata)
         amp = max(max_num, -min_num)
-        # print(f"amp {amp} max {np.max(indata)} min {np.min(indata)}")
         self.input_dev_battery.change_level(amp * self.input_dev_amp_scale)
 
-# def audio_callback2(indata, frames, time, status):
-#     """This is called (from a separate thread) for each audio block."""
-#     downsample = 10
-#     if status:
-#         print(status, file=sys.stderr)
-#     # # Fancy indexing with mapping creates a (necessary!) copy:
-#     # q.put(indata[::args.downsample, mapping])
-#
-#     print(f"out num of frames {frames}")
-
-
-# def audio_callback(indata, outdata, frames, time, status):
-#     print(f"out num of frames {frames}")
-
-
-# def sound_thread(dev):
-#     with sd.InputStream(device=dev['index'],
-#                   samplerate=dev['default_samplerate'],
-#                   channels=dev['max_input_channels'], callback=audio_callback2):
-#         print('#' * 80)
-#         print('press Return to quit')
-#         print('#' * 80)
-#         input()
