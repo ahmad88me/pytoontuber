@@ -135,7 +135,7 @@ class ControlsBar():
         max_num = np.max(indata)
         min_num = np.min(indata)
         amp = max(max_num, -min_num)
-        print(f"amp {amp} max {np.max(indata)} min {np.min(indata)}")
+        # print(f"amp {amp} max {np.max(indata)} min {np.min(indata)}")
         self.input_dev_battery.change_level(amp * self.input_dev_amp_scale)
 
 # def audio_callback2(indata, frames, time, status):

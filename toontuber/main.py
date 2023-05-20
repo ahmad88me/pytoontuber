@@ -27,6 +27,7 @@ w_height = w_width
 upload_img = None  # PhotoImage(file='upload.png')
 window_resize_active=False
 active_video_path = "/Users/aalobaid/Downloads/Tuber/Tuber/idlenormal.mp4"
+active_video_fps = None
 
 # def on_window_resize(event):
 # #    print("widget", event.widget)
@@ -46,12 +47,14 @@ active_video_path = "/Users/aalobaid/Downloads/Tuber/Tuber/idlenormal.mp4"
     #     print("resize is inactive")
 
 def loop_video():
-    global cap, active_video_path
+    global cap, active_video_path, active_video_fps
     # vpath = "/Users/aalobaid/Downloads/Tuber/Tuber/idlenormal.mp4"
     # vpath = "/Users/aalobaid/Downloads/Tuber/Tuber/talknormal.mp4"
     vpath = active_video_path
     cap = cv2.VideoCapture(vpath)
-
+    active_video_fps = cap.get(cv2.CAP_PROP_FPS)
+#cv2.GetCaptureProperty(cap, CV_CAP_PROP_FPS)
+    print(f"FPS: {active_video_fps}")
 # filename = filedialog.askopenfilename
 
 
@@ -61,6 +64,7 @@ def photo_image(img):
     h, w = img.shape[:2]
     data = f'P6 {w} {h} 255 '.encode() + img[..., ::-1].tobytes()
     return PhotoImage(width=w, height=h, data=data, format='PPM')
+
 
 
 def update():
@@ -86,9 +90,10 @@ def update():
     else:
         loop_video()
         # anim_bar.resize_buttons(400)
+    wait_time = int(1000/active_video_fps)
+    root.after(wait_time, update)
 
-
-    root.after(15, update)
+    # root.after(15, update)
 
 
 
