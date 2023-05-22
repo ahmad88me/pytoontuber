@@ -13,13 +13,18 @@ import argparse
 import queue
 from functools import partial
 import cv2
+from threading import Lock
+
+# from pympler import summary, muppy, refbrowser
+
+
+cap_lock = Lock()
+# q_lock = Lock()
 
 toon_view_width = 400
 toon_view_height = 400
 
 anim_grid_height = 200
-
-
 
 w_width = 400
 w_height = w_width
@@ -34,8 +39,10 @@ window_resize_active=False
 active_video_path = "/Users/aalobaid/Downloads/Tuber/Tuber/idlenormal.mp4"
 active_video_fps = 1000
 
-#anime_q = queue.Queue()
-anime_q = []
+cap = None
+
+anime_q = queue.Queue()
+# anime_q = []
 curr_action = "idle"
 anime_manager = AnimationManager()
 
@@ -50,16 +57,26 @@ def on_window_resize(event):
         anim_bar.resize_buttons(w_height)
         last_resize = datetime.datetime.now()
 
+
 def loop_video(vpath=None):
     global cap, active_video_path, active_video_fps
+
     if vpath is None:
         vpath = active_video_path
     else:
         active_video_path = vpath
+    cap_lock.acquire()
+    if cap:
+        cap.release()
+        del cap
     cap = cv2.VideoCapture(vpath)
+    cap_lock.release()
     active_video_fps = cap.get(cv2.CAP_PROP_FPS)
     print(f"FPS: {active_video_fps}")
 
+    # all_objects = muppy.get_objects()
+    # sum1 = summary.summarize(all_objects)
+    # summary.print_(sum1)
 
 
 
@@ -69,11 +86,14 @@ def photo_image(img):
     return PhotoImage(width=w, height=h, data=data, format='PPM')
 
 
-
 def update():
     global w_width, w_height, cap
+    cap_lock.acquire()
+    if not cap:
+        root.after(15, update)
+        return
     ret, img = cap.read()
-
+    cap_lock.release()
     if ret:
         w_width = canvas.winfo_width()
         w_height = canvas.winfo_height()
@@ -82,16 +102,22 @@ def update():
         img = cv2.resize(img, (toon_view_width, toon_view_height))
 
         photo = photo_image(img)
+        canvas.delete()
         canvas.create_image(w_width/2 - toon_view_width/2, w_height/2 - toon_view_height/2, image=photo, anchor=NW)
         canvas.image = photo
     else:
-        # if anime_q.empty():
-        if not anime_q:
+        if anime_q.empty():
+        # q_lock.acquire()
+        # if not anime_q:
             print(f"queue is empty")
             loop_video()
+            # q_lock.release()
         else:
             # vpath = anime_q.get(block=True)
-            vpath = anime_q.pop(0)
+            # vpath = anime_q.pop(0)
+            vpath = anime_q.get(0)
+
+            # q_lock.release()
             print(f"getting a new vpath: {vpath}")
             loop_video(vpath)
     wait_time = int(1000/active_video_fps)
@@ -106,7 +132,6 @@ loop_video()
 canvas = Canvas(root, width=toon_view_width, height=toon_view_height)
 
 
-
 canvas.grid(row=0, column=1, sticky="news")
 root.grid_rowconfigure(0, weight=1)
 root.grid_columnconfigure(1, weight=1)
@@ -119,6 +144,7 @@ cont_bar = ControlsBar(other_frames=[anim_bar.frame])
 cont_bar.read_input_devices()
 cont_bar.draw_input_controls(root, grid_col=0, grid_row=0)
 
+
 def key_press(event):
     key = event.char
     print(f"'{key}' is pressed")
@@ -129,6 +155,8 @@ def key_press(event):
         cont_bar.input_dev_battery.change_level(cont_bar.input_dev_battery.level + 0.1)
     elif key=='l':
         cont_bar.input_dev_battery.change_level(cont_bar.input_dev_battery.level - 0.1)
+    if key=='d':
+        print(f"Open refbrowser")
 
 
 def take_action(action_name):
@@ -159,11 +187,13 @@ def audio_to_action(amp):
 
     print(f"audio to action: {action}")
     print(f"curr action{curr_action} and new action {action}")
-    if anime_q and curr_action not in ["idle"]:
-    # if not anime_q.empty() and curr_action not in ["idle", "set"]:
+    # q_lock.acquire()
+    # if anime_q and curr_action not in ["idle"]:
+    if not anime_q.empty() and curr_action not in ["idle"]:
+        # q_lock.release()
         print(f"queue is not empty {anime_q} and curr_action {curr_action}")
         return
-
+    # q_lock.release()
     if curr_action == action:
         return
     # if curr_action == "idle" and action != "idle"
@@ -171,7 +201,10 @@ def audio_to_action(amp):
     # set_vpath = anime_manager.get_action_vid("set")
     # loop_video(vpath)
     # anime_q.queue.clear()
-    anime_q = []
+    # q_lock.acquire()
+    # anime_q = []
+    # q_lock.release()
+    anime_q.queue.clear()
     vpath = anime_manager.get_action_vid(action)
     loop_video(vpath)
     # anime_q = [set_vpath, vpath]
@@ -184,9 +217,12 @@ def audio_to_action(amp):
 
 def parse():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('-v', '--videos', nargs='+', help='the list of videos to be utilised')
+    parser.add_argument('-v', '--videos', required=True, nargs='+', help='the list of videos to be utilised')
     args = parser.parse_args()
+    # if not args.videos:
+    #     print(f"You are expected to pass")
     return args.videos
+
 
 def main():
     global root, cap, anime_manager

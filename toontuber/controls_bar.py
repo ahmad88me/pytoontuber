@@ -21,7 +21,7 @@ from battery_widget import BatteryWidget
 
 class ControlsBar():
 
-    def __init__(self, thickness=100, bar_length=400, num_buttons=10, other_frames=[]):
+    def __init__(self, thickness=100, bar_length=400, num_buttons=10, other_frames=[], block_size=None):
         self.num_buttons = num_buttons
         self.buttons = []
         self.thickness = thickness
@@ -38,9 +38,11 @@ class ControlsBar():
         self.other_frames = other_frames
         self.amp_scale = None
         self.amp_ext_callback = None
+        self.sample_rate_reduction = 1
+        self.block_size = block_size
 
-    def append_frame(self, frame):
-        self.other_frames.append(frame)
+    # def append_frame(self, frame):
+    #     self.other_frames.append(frame)
 
     def _amp_scale_callback(self, event):
         print(f" new amp scale value: {self.amp_scale.get()}")
@@ -52,10 +54,16 @@ class ControlsBar():
         scale.grid(row=4, column=0)
 
     def _draw_hide_button(self):
+        """
+        Hide button
+        """
         self.hide_button = Button(self.frame, text="Hide", command=self.hide_frame)
         self.hide_button.grid(row=2, column=0)
 
     def hide_frame(self):
+        """
+        Action to hide frame
+        """
         self.frame.grid_forget()
         for f in self.other_frames:
             f.grid_forget()
@@ -91,6 +99,8 @@ class ControlsBar():
         """
         b = BatteryWidget(self.frame, width=width, grid_row=1, grid_column=0)
         b.draw_battery(width)
+        if self.input_dev_battery:
+            del self.input_dev_battery
         self.input_dev_battery = b
 
     def draw_input_controls(self, root, grid_col, grid_row):
@@ -115,6 +125,9 @@ class ControlsBar():
         self.capture_audio()
 
     def set_input_device(self, dev_name):
+        """
+        Set input device
+        """
         self.active_input_dev = dev_name
 
     def capture_audio(self):
@@ -124,48 +137,78 @@ class ControlsBar():
         print(f"Capture Audio {self.active_input_dev}")
         dev = self.input_devices[self.active_input_dev]
         print(f"Active device: {dev}")
-        t = Thread(target=self._sound_thread, args=(dev,))
-
-        t.run()
         if self.input_dev_thread:
             self.input_dev_thread.kill()
+
+        t = Thread(target=self._sound_thread, args=(dev,))
+        t.start()
         self.input_dev_thread = t
 
+# blocking
+    # def _sound_thread(self, dev):
+    #     """
+    #     Sound monitoring thread
+    #     """
+    #     with sd.InputStream(device=dev['index'],
+    #                         samplerate=dev['default_samplerate'] * self.sample_rate_reduction,
+    #                         # channels=dev['max_input_channels'],
+    #                         channels=1,
+    #                         dither_off=True # to stop dither. It lowers the quality
+    #                         ) as inp_stream:
+    #         while True:
+    #             # num_frames = max(inp_stream.read_available*2, 1024)
+    #             # num_frames = max(inp_stream.read_available, 64)
+    #             num_frames = 16
+    #             data, overflowed = inp_stream.read(num_frames)
+    #             # data, overflowed = inp_stream.read(1024)
+    #             self.audio_callback(data, 0, None, None)
+    #             # sd.sleep(100)
+
+# with callback
     def _sound_thread(self, dev):
         """
         Sound monitoring thread
         """
         with sd.InputStream(device=dev['index'],
                             samplerate=dev['default_samplerate'],
-                            channels=dev['max_input_channels'], callback=self.audio_callback):
+                            # channels=dev['max_input_channels'],
+                            channels=1,
+                            dither_off=True, # to stop dither. It lowers the quality
+                            callback=self.audio_callback):
             print('#' * 80)
             print('press Return to quit mic monitor')
             print('#' * 80)
-            input()
+            # input()
+            while True:
+                sd.sleep(10000)
 
     def audio_callback(self, indata, frames, time, status):
-        """This is called (from a separate thread) for each audio block."""
+        """
+        This is called (from a separate thread) for each audio block.
+        """
         downsample = 10
         if status:
             print(status, file=sys.stderr)
 
+        if indata.shape[0] == 0:
+            print(f"empty")
+            return
         max_num = np.max(indata)
         min_num = np.min(indata)
         amp = max(max_num, -min_num)
+
         self.input_dev_battery.change_level(amp * self.input_dev_amp_scale)
         self.post_audio_callback(amp)
 
     def post_audio_callback(self, amp):
+        """
+        This calls the external callback.
+        """
+
         amp = amp * self.input_dev_amp_scale
-        # print(f"amp {amp}")
+        # print(f"amp: {amp}")
         if self.amp_ext_callback:
+            t = Thread(target=self.amp_ext_callback, args=(amp,))
+            t.run()
             self.amp_ext_callback(amp)
-        # if amp < 0.1:
-        #     print("idle")
-        # elif amp < 0.3:
-        #     print("talk")
-        # elif amp < 0.6:
-        #     print("peak")
-        # else:
-        #     print(f"scream {amp}")
 

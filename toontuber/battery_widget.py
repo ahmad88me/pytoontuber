@@ -35,7 +35,7 @@ class BatteryWidget():
         # w = self.thickness
         w = self.width/2
         h = int(self.width/(self.bins+1))
-
+        self.recs = []
         # print(f"The master width is: {self.width}")
         # print(f"The x position: {self.width/2 - w/2} with canvas width {self.width} and bin width {w}")
         for bi in range(self.bins):
