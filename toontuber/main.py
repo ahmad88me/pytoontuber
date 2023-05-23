@@ -15,6 +15,9 @@ from micman import MicMan
 
 cap_lock = Lock()
 
+action_history = []
+playing_action = "idle"
+
 micman = MicMan()
 
 same_vid = True
@@ -41,7 +44,6 @@ cap = None
 
 anime_q = queue.Queue()
 # anime_q = []
-curr_action = "idle"
 anime_manager = AnimationManager()
 
 selected_property = ""
@@ -184,7 +186,7 @@ def take_action(action_name):
 
 
 def audio_to_action(amp):
-    global anime_manager
+    global anime_manager, playing_action
 
     if amp < 0.05:
         action = "idle"
@@ -195,9 +197,38 @@ def audio_to_action(amp):
     else:
         action = "peak"
 
+    if "talk" in action_history or "peak" in action_history:
+        action_history.pop(0)
+        action_history.append(action)
+        if playing_action == "talk" and action=="peak":
+            pass
+            # action_history.append(action)
+            # do peak
+        elif playing_action == "peak" and action=="talk":
+            pass
+            # action_history.append(action)
+            # do talk
+        else:
+            # action_history.append(action)
+            if playing_action in ["talk", "peak"]:
+                # continue to play the same animation
+                print(f"Continue the animation {playing_action}")
+                return
+            # else:
+            #     # in case playing action was idle but should've been talking or peak.
+            #     action = "talk"
+    else:
+        action_history.pop(0)
+        action_history.append(action)
+
+        # if adle continue to be adle
+        # if was adle and now talk or peak. do the new action
+
+
     print(f"audio to action: {action} and amp {('{:.2f}'.format(amp))}")
     vpath = anime_manager.get_action_vid(action)
     loop_video(vpath)
+    playing_action = action
 
 
 
@@ -234,14 +265,21 @@ def exit_app():
     cv2.destroyAllWindows()
 
 
+def setup_action_history(history=3,action="idle"):
+    global action_history
+    for i in range(history):
+        action_history.append(action)
+
+
 def main():
     global root, cap, anime_manager
     videos, dev_id, sens = parse()
+    setup_action_history(history=3)
     anime_manager.organise(videos)
     micman.callback = audio_to_action
     micman.sensitivity = sens
     micman.capture_audio(dev_id)
-    loop_video()
+    loop_video(anime_manager.get_action_vid("idle"))
     try:
         update()
     except KeyboardInterrupt:
