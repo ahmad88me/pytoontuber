@@ -208,7 +208,7 @@ class ControlsBar():
         amp = amp * self.input_dev_amp_scale
         # print(f"amp: {amp}")
         if self.amp_ext_callback:
-            t = Thread(target=self.amp_ext_callback, args=(amp,))
-            t.run()
+            # t = Thread(target=self.amp_ext_callback, args=(amp,))
+            # t.run()
             self.amp_ext_callback(amp)
 

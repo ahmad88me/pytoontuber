@@ -1,8 +1,11 @@
 from PIL import Image,ImageTk
-
+from tkinter import NW, N, CENTER, RAISED, TOP, E
+from tkinter import  Label, Button, Frame
+from tkinter import filedialog
+from tkinter import Tk, Canvas, PhotoImage
 import math
-
-import sounddevice as sd
+from animation_bar import AnimationBar
+from controls_bar import ControlsBar
 from animan import AnimationManager
 import datetime
 import keybind
@@ -11,13 +14,12 @@ import queue
 from functools import partial
 import cv2
 from threading import Lock
-from micman import MicMan
+
+# from pympler import summary, muppy, refbrowser
+
 
 cap_lock = Lock()
-
-micman = MicMan()
-
-same_vid = True
+# q_lock = Lock()
 
 toon_view_width = 400
 toon_view_height = 400
@@ -63,14 +65,12 @@ def loop_video(vpath=None):
         vpath = active_video_path
     else:
         active_video_path = vpath
-
     cap_lock.acquire()
     if cap:
         cap.release()
         del cap
     cap = cv2.VideoCapture(vpath)
     cap_lock.release()
-
     active_video_fps = cap.get(cv2.CAP_PROP_FPS)
     print(f"FPS: {active_video_fps}")
 
@@ -87,50 +87,62 @@ def photo_image(img):
 
 
 def update():
-    global cap, same_vid
-    # global w_width, w_height, cap
-    while same_vid:
-        cap_lock.acquire()
-        ret, img = cap.read()
-        cap_lock.release()
-        if ret:
-            cv2.imshow('Frame', img)
-            if cv2.waitKey(25) & 0xFF == ord('q'):
-                break
-            # Press Q on keyboard to  exit
-            # if cv2.waitKey(25) & 0xFF == ord('q'):
-            #     return
+    global w_width, w_height, cap
+    cap_lock.acquire()
+    if not cap:
+        root.after(15, update)
+        return
+    ret, img = cap.read()
+    cap_lock.release()
+    if ret:
+        w_width = canvas.winfo_width()
+        w_height = canvas.winfo_height()
+        toon_view_width = min(w_width, w_height)
+        toon_view_height = toon_view_width
+        img = cv2.resize(img, (toon_view_width, toon_view_height))
 
-            # w_width = canvas.winfo_width()
-            # w_height = canvas.winfo_height()
-            # toon_view_width = min(w_width, w_height)
-            # toon_view_height = toon_view_width
-            # img = cv2.resize(img, (toon_view_width, toon_view_height))
-            #
-            # photo = photo_image(img)
-            # canvas.delete()
-            # canvas.create_image(w_width/2 - toon_view_width/2, w_height/2 - toon_view_height/2, image=photo, anchor=NW)
-            # canvas.image = photo
-        else:
+        photo = photo_image(img)
+        canvas.delete()
+        canvas.create_image(w_width/2 - toon_view_width/2, w_height/2 - toon_view_height/2, image=photo, anchor=NW)
+        canvas.image = photo
+    else:
+        if anime_q.empty():
+        # q_lock.acquire()
+        # if not anime_q:
+            print(f"queue is empty")
             loop_video()
-        # if anime_q.empty():
-        # # q_lock.acquire()
-        # # if not anime_q:
-        #     print(f"queue is empty")
-        #     loop_video()
-        #     # q_lock.release()
-        # else:
-        #     # vpath = anime_q.get(block=True)
-        #     # vpath = anime_q.pop(0)
-        #     vpath = anime_q.get(0)
-        #
-        #     # q_lock.release()
-        #     print(f"getting a new vpath: {vpath}")
-    #         loop_video(vpath)
-    # wait_time = int(1000/active_video_fps)
-    # root.after(wait_time, update)
+            # q_lock.release()
+        else:
+            # vpath = anime_q.get(block=True)
+            # vpath = anime_q.pop(0)
+            vpath = anime_q.get(0)
+
+            # q_lock.release()
+            print(f"getting a new vpath: {vpath}")
+            loop_video(vpath)
+    wait_time = int(1000/active_video_fps)
+    root.after(wait_time, update)
 
 
+root = Tk()
+root.title("Video")
+loop_video()
+
+
+canvas = Canvas(root, width=toon_view_width, height=toon_view_height)
+
+
+canvas.grid(row=0, column=1, sticky="news")
+root.grid_rowconfigure(0, weight=1)
+root.grid_columnconfigure(1, weight=1)
+
+
+anim_bar = AnimationBar()
+anim_bar.draw_animation_grid(root, grid_col=2, grid_row=0)
+
+cont_bar = ControlsBar(other_frames=[anim_bar.frame])
+cont_bar.read_input_devices()
+cont_bar.draw_input_controls(root, grid_col=0, grid_row=0)
 
 
 def key_press(event):
@@ -161,11 +173,8 @@ def take_action(action_name):
             print(f"Change active video to {vpath}")
             loop_video()
 
-
-
-
 def audio_to_action(amp):
-    global anime_manager
+    global anime_manager, anime_q, curr_action
 
     if amp < 0.05:
         action = "idle"
@@ -176,56 +185,57 @@ def audio_to_action(amp):
     else:
         action = "peak"
 
-    print(f"audio to action: {action} and amp {}")
+    print(f"audio to action: {action}")
+    print(f"curr action{curr_action} and new action {action}")
+    # q_lock.acquire()
+    # if anime_q and curr_action not in ["idle"]:
+    if not anime_q.empty() and curr_action not in ["idle"]:
+        # q_lock.release()
+        print(f"queue is not empty {anime_q} and curr_action {curr_action}")
+        return
+    # q_lock.release()
+    if curr_action == action:
+        return
+    # if curr_action == "idle" and action != "idle"
+
+    # set_vpath = anime_manager.get_action_vid("set")
+    # loop_video(vpath)
+    # anime_q.queue.clear()
+    # q_lock.acquire()
+    # anime_q = []
+    # q_lock.release()
+    anime_q.queue.clear()
     vpath = anime_manager.get_action_vid(action)
     loop_video(vpath)
+    # anime_q = [set_vpath, vpath]
+    # anime_q = [vpath]
 
-
-
+    curr_action = action
+    # anime_q.put(set_vpath, block=True)
+    # anime_q.put(vpath, block=True)
 
 
 def parse():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('-v', '--videos', required=True, nargs='+', help='the list of videos to be utilised')
-    parser.add_argument('-d', '--device', type=int, help="The index of the number. This should be an integer")
-    parser.add_argument('-s', '--sensitivity', default=1, type=int, help="How sensitive are the mics",
-                        choices=range(1, 50),
-                        metavar="[0-50]",
-                        )
     args = parser.parse_args()
-    if args.device:
-        dev_id = args.device
-    else:
-        dev_id = micman.get_device_from_user()
     # if not args.videos:
     #     print(f"You are expected to pass")
-    return args.videos, dev_id, args.sensitivity
-
-
-def audio_callback(amp):
-    """
-    Callback that recieves the amp from the listener
-    """
-    print(f"amp is {amp}")
+    return args.videos
 
 
 def main():
     global root, cap, anime_manager
-    videos, dev_id, sens = parse()
+    videos = parse()
     anime_manager.organise(videos)
-    # micman.callback = audio_callback
-    micman.callback = audio_to_action
-    micman.sensitivity = sens
-    micman.capture_audio(dev_id)
-    loop_video()
+    cont_bar.amp_ext_callback = audio_to_action
+    root.bind('<Key>', key_press)
+    root.bind("<Configure>", on_window_resize)
     update()
+    root.mainloop()
     cap.release()
 
 if __name__ == "__main__":
     main()
-
-
-
-
 
 
