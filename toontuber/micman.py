@@ -8,6 +8,11 @@ class MicMan:
         self.input_devices = self.read_devices()
         self.callback = None
         self.sensitivity = 1
+        self.audio_capture_thread = None
+        self.no_exist_signal = True
+
+    def stop_audio_capture(self):
+        self.no_exist_signal = False
 
     def read_devices(self):
         devs = sd.query_devices(device=None)
@@ -39,7 +44,7 @@ class MicMan:
         print(f"Creating a listening thread ...")
         t = Thread(target=self._sound_cap_thread, args=(dev_id,))
         t.start()
-
+        self.audio_capture_thread = t
 
 
     def _sound_cap_thread(self, dev_id):
@@ -57,8 +62,8 @@ class MicMan:
             # print('press Return to quit mic monitor')
             # print('#' * 80)
             # input()
-            while True:
-                sd.sleep(10000)
+            while self.no_exist_signal:
+                sd.sleep(1000)
 
     def _audio_callback(self, indata, frames, time, status):
         """

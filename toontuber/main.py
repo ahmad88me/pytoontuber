@@ -44,6 +44,10 @@ anime_q = queue.Queue()
 curr_action = "idle"
 anime_manager = AnimationManager()
 
+cv2.namedWindow("window", cv2.WINDOW_NORMAL)
+cv2.startWindowThread()
+
+
 def on_window_resize(event):
     global last_resize, w_height, w_width, anim_bar
 
@@ -67,7 +71,8 @@ def loop_video(vpath=None):
     cap_lock.acquire()
     if cap:
         cap.release()
-        del cap
+        # del cap
+        cap = None
     cap = cv2.VideoCapture(vpath)
     cap_lock.release()
 
@@ -96,6 +101,7 @@ def update():
         if ret:
             cv2.imshow('Frame', img)
             if cv2.waitKey(25) & 0xFF == ord('q'):
+                print(f"stoping the app")
                 break
             # Press Q on keyboard to  exit
             # if cv2.waitKey(25) & 0xFF == ord('q'):
@@ -176,7 +182,7 @@ def audio_to_action(amp):
     else:
         action = "peak"
 
-    print(f"audio to action: {action} and amp {}")
+    print(f"audio to action: {action} and amp {('{:.2f}'.format(amp))}")
     vpath = anime_manager.get_action_vid(action)
     loop_video(vpath)
 
@@ -193,7 +199,9 @@ def parse():
                         metavar="[0-50]",
                         )
     args = parser.parse_args()
-    if args.device:
+    print(f"The arguments are parsed:")
+    print(f"args: {args}")
+    if isinstance(args.device, int):
         dev_id = args.device
     else:
         dev_id = micman.get_device_from_user()
@@ -209,6 +217,19 @@ def audio_callback(amp):
     print(f"amp is {amp}")
 
 
+def exit_app():
+    global cap, cap_lock
+    print(f"Exiting the app and releasing the resources.")
+    micman.stop_audio_capture()
+    cap_lock.acquire()
+    if cap:
+        cap.release()
+        # del cap
+        cap = None
+    cap_lock.release()
+    cv2.destroyAllWindows()
+
+
 def main():
     global root, cap, anime_manager
     videos, dev_id, sens = parse()
@@ -218,8 +239,14 @@ def main():
     micman.sensitivity = sens
     micman.capture_audio(dev_id)
     loop_video()
-    update()
-    cap.release()
+    try:
+        update()
+    except KeyboardInterrupt:
+        print(f"Keyboard is interrupted. Now releasing the resources.")
+    exit_app()
+
+
+    # cap.release()
 
 if __name__ == "__main__":
     main()
