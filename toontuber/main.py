@@ -37,7 +37,8 @@ last_resize = datetime.datetime.now()
 
 upload_img = None
 window_resize_active=False
-active_video_path = "/Users/aalobaid/Downloads/Tuber/Tuber/idlenormal.mp4"
+active_video_path = ""
+# active_video_path = "/Users/aalobaid/Downloads/Tuber/Tuber/idlenormal.mp4"
 active_video_fps = 1000
 
 cap = None
@@ -217,6 +218,9 @@ def audio_to_action(amp):
             # else:
             #     # in case playing action was idle but should've been talking or peak.
             #     action = "talk"
+    elif action == "idle" and playing_action == "idle":
+        # continue playing the idle
+        return
     else:
         action_history.pop(0)
         action_history.append(action)

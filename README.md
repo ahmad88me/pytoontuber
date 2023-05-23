@@ -17,6 +17,8 @@ operating systems.
 You just need to run the `main.py` using the terminal or CMD (command line interface). 
 You need to pass the videos to be used and the device index. If the device index is not passed, it will list the devices and you should pick the mic that you want to use (make sure that no other processes are actually using it may produce an error).
 
+To exist the app, click on "q" on your keyboard. But make sure that the window is active.
+
 ```
 usage: main.py [-h] -v VIDEOS [VIDEOS ...] [-d DEVICE] [-s [0-50]]
 
@@ -48,3 +50,4 @@ Also note that you can add multiple versions of the same action. For example, `t
 #### Sensitivity
 This is how sensitive the mics are. By default, it is 1. But you are either pass the sensitivity as a parameter or you can also adjust it while using the application. While the 
 app window is active, you can click the "s" key and then click on the "+" or "-" to raise or lower the sensitivity. 
+
