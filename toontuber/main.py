@@ -44,6 +44,8 @@ anime_q = queue.Queue()
 curr_action = "idle"
 anime_manager = AnimationManager()
 
+selected_property = ""
+
 cv2.namedWindow("window", cv2.WINDOW_NORMAL)
 cv2.startWindowThread()
 
@@ -77,11 +79,8 @@ def loop_video(vpath=None):
     cap_lock.release()
 
     active_video_fps = cap.get(cv2.CAP_PROP_FPS)
-    print(f"FPS: {active_video_fps}")
+    # print(f"FPS: {active_video_fps}")
 
-    # all_objects = muppy.get_objects()
-    # sum1 = summary.summarize(all_objects)
-    # summary.print_(sum1)
 
 
 
@@ -89,6 +88,25 @@ def photo_image(img):
     h, w = img.shape[:2]
     data = f'P6 {w} {h} 255 '.encode() + img[..., ::-1].tobytes()
     return PhotoImage(width=w, height=h, data=data, format='PPM')
+
+
+def cmd_controls(pressed_key):
+    global selected_property
+    if pressed_key == ord("s"):
+        selected_property = "sensitivity"
+        print(f"Selected property: {selected_property} and value is {micman.sensitivity}")
+    elif pressed_key == ord("+") or pressed_key == ord("-"):
+        sign = 1
+        if pressed_key == ord("-"):
+            sign = -1
+
+        if selected_property == "sensitivity":
+            new_sens = micman.sensitivity + 1*sign
+            if 0 < new_sens < 30:
+                micman.sensitivity = new_sens
+                print(f"new sensitivity: {new_sens}")
+            else:
+                print(f"invalid sensitivity: {new_sens}")
 
 
 def update():
@@ -100,9 +118,16 @@ def update():
         cap_lock.release()
         if ret:
             cv2.imshow('Frame', img)
-            if cv2.waitKey(25) & 0xFF == ord('q'):
+            pressed_key = cv2.waitKey(25)
+            if pressed_key == ord('q'):
                 print(f"stoping the app")
                 break
+            else:
+                cmd_controls(pressed_key)
+            # if cv2.waitKey(25) & 0xFF == ord('q'):
+            #     print(f"stoping the app")
+            #     break
+
             # Press Q on keyboard to  exit
             # if cv2.waitKey(25) & 0xFF == ord('q'):
             #     return
@@ -139,18 +164,6 @@ def update():
 
 
 
-def key_press(event):
-    key = event.char
-    print(f"'{key}' is pressed")
-    action_name = keybind.get_action(key)
-    if action_name:
-        take_action(action_name)
-    if key=='u':
-        cont_bar.input_dev_battery.change_level(cont_bar.input_dev_battery.level + 0.1)
-    elif key=='l':
-        cont_bar.input_dev_battery.change_level(cont_bar.input_dev_battery.level - 0.1)
-    if key=='d':
-        print(f"Open refbrowser")
 
 
 def take_action(action_name):
@@ -205,16 +218,8 @@ def parse():
         dev_id = args.device
     else:
         dev_id = micman.get_device_from_user()
-    # if not args.videos:
-    #     print(f"You are expected to pass")
+
     return args.videos, dev_id, args.sensitivity
-
-
-def audio_callback(amp):
-    """
-    Callback that recieves the amp from the listener
-    """
-    print(f"amp is {amp}")
 
 
 def exit_app():
@@ -224,7 +229,6 @@ def exit_app():
     cap_lock.acquire()
     if cap:
         cap.release()
-        # del cap
         cap = None
     cap_lock.release()
     cv2.destroyAllWindows()
@@ -234,7 +238,6 @@ def main():
     global root, cap, anime_manager
     videos, dev_id, sens = parse()
     anime_manager.organise(videos)
-    # micman.callback = audio_callback
     micman.callback = audio_to_action
     micman.sensitivity = sens
     micman.capture_audio(dev_id)
