@@ -1,4 +1,3 @@
-#from PIL import Image,ImageTk
 from PIL import Image
 
 import math
@@ -86,14 +85,6 @@ def loop_video(vpath=None):
     # print(f"FPS: {active_video_fps}")
 
 
-
-
-def photo_image(img):
-    h, w = img.shape[:2]
-    data = f'P6 {w} {h} 255 '.encode() + img[..., ::-1].tobytes()
-    return PhotoImage(width=w, height=h, data=data, format='PPM')
-
-
 def cmd_controls(pressed_key):
     global selected_property
     if pressed_key == ord("s"):
@@ -115,7 +106,6 @@ def cmd_controls(pressed_key):
 
 def update():
     global cap, same_vid
-    # global w_width, w_height, cap
     while same_vid:
         cap_lock.acquire()
         ret, img = cap.read()
@@ -128,46 +118,8 @@ def update():
                 break
             else:
                 cmd_controls(pressed_key)
-            # if cv2.waitKey(25) & 0xFF == ord('q'):
-            #     print(f"stoping the app")
-            #     break
-
-            # Press Q on keyboard to  exit
-            # if cv2.waitKey(25) & 0xFF == ord('q'):
-            #     return
-
-            # w_width = canvas.winfo_width()
-            # w_height = canvas.winfo_height()
-            # toon_view_width = min(w_width, w_height)
-            # toon_view_height = toon_view_width
-            # img = cv2.resize(img, (toon_view_width, toon_view_height))
-            #
-            # photo = photo_image(img)
-            # canvas.delete()
-            # canvas.create_image(w_width/2 - toon_view_width/2, w_height/2 - toon_view_height/2, image=photo, anchor=NW)
-            # canvas.image = photo
         else:
             loop_video()
-        # if anime_q.empty():
-        # # q_lock.acquire()
-        # # if not anime_q:
-        #     print(f"queue is empty")
-        #     loop_video()
-        #     # q_lock.release()
-        # else:
-        #     # vpath = anime_q.get(block=True)
-        #     # vpath = anime_q.pop(0)
-        #     vpath = anime_q.get(0)
-        #
-        #     # q_lock.release()
-        #     print(f"getting a new vpath: {vpath}")
-    #         loop_video(vpath)
-    # wait_time = int(1000/active_video_fps)
-    # root.after(wait_time, update)
-
-
-
-
 
 
 def take_action(action_name):
@@ -183,8 +135,6 @@ def take_action(action_name):
             active_video_path = vpath
             print(f"Change active video to {vpath}")
             loop_video()
-
-
 
 
 def audio_to_action(amp):
@@ -204,21 +154,16 @@ def audio_to_action(amp):
         action_history.append(action)
         if playing_action == "talk" and action=="peak":
             pass
-            # action_history.append(action)
             # do peak
         elif playing_action == "peak" and action=="talk":
             pass
-            # action_history.append(action)
             # do talk
         else:
-            # action_history.append(action)
             if playing_action in ["talk", "peak"]:
                 # continue to play the same animation
                 print(f"Continue the animation {playing_action}")
                 return
-            # else:
-            #     # in case playing action was idle but should've been talking or peak.
-            #     action = "talk"
+
     elif action == "idle" and playing_action == "idle":
         # continue playing the idle
         return
@@ -226,17 +171,10 @@ def audio_to_action(amp):
         action_history.pop(0)
         action_history.append(action)
 
-        # if adle continue to be adle
-        # if was adle and now talk or peak. do the new action
-
-
     print(f"audio to action: {action} and amp {('{:.2f}'.format(amp))}")
     vpath = anime_manager.get_action_vid(action)
     loop_video(vpath)
     playing_action = action
-
-
-
 
 
 def parse():

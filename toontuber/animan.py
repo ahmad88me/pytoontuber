@@ -11,7 +11,6 @@ class AnimationManager:
         for act in self.actions:
             self.vids[act] = []
 
-
     def organise(self, vids):
         for vpath in vids:
             fname = vpath.split(os.sep)[-1]
